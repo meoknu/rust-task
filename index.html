@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tree View Application</title>
+    
+    <link href="libs/jquery.orgchart.css" media="all" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+    <div id="orgChartContainer">
+        <div id="orgChart"></div>
+    </div>
+
+    <input type="number" id="parent_id" placeholder="Enter Parent ID">
+    <button onclick="addNode()">Add</button>
+    <div id="error_message"></div>
+
+    <script src="libs/jquery-1.11.1.min.js"></script>
+    <script src="libs/jquery.orgchart.js"></script>
+    <script>
+        function fetchAndDisplayTree() {
+            fetch('http://localhost:8000/api/nodes', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                var nodes = data.nodes;
+                for (let i = 0; i < nodes.length; i++) {
+                    nodes[i] = {
+                        id: nodes[i].id,
+                        parent: nodes[i].parent_id || 0,
+                        name: nodes[i].id
+                    };
+                }
+                console.log(nodes);
+                $('#orgChart').orgChart({ data: nodes });
+            })
+            .catch((error) => {
+                document.getElementById('error_message').innerText = 'Error fetching tree';
+            });
+        }
+
+        // Call fetchAndDisplayTree to load the tree on page load
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayTree);
+
+        // Update the addNode function to refresh the tree after a node is added
+        function addNode() {
+            var parentId = document.getElementById('parent_id').value;
+            fetch('http://localhost:8000/api/nodes/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ parent_id: parseInt(parentId) }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status == 'error') {
+                    alert("Invalid Parent ID")
+                }
+                document.getElementById('error_message').innerText = '';
+                fetchAndDisplayTree(); // Refresh the tree view after adding a node
+            })
+            .catch((error) => {
+                alert()
+                document.getElementById('error_message').innerText = 'Error adding node';
+            });
+        }
+    </script>
+</body>
+</html>
