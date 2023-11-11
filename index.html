@@ -3,21 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <title>Tree View Application</title>
-    
-    <link href="libs/jquery.orgchart.css" media="all" rel="stylesheet" type="text/css" />
+    <style>
+        .node {
+            padding: 40px;
+            position: relative;
+        }
+        .node_title:before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            background-color: #666;
+            width: 2px;
+            height: 20px;
+            left: calc(50% - 1px);
+        }
+        .node_children:before {
+            content: "";
+            position: absolute;
+            background-color: #666;
+            width: 2px;
+            height: 20px;
+            left: calc(50% - 1px);
+        }
+        .node .node:before {
+            content: "";
+            position: absolute;
+            background-color: #666;
+            width: auto;
+            height: 2px;
+            left: 0;
+            right: 0;
+            top: 20px;
+        }
+        .node .node:first-child:before {
+            left: 50%;
+        }
+        .node .node:last-child:before {
+            right: 50%;
+        }
+        .node .node:first-child:last-child:before {
+            /* content: ''; */
+            border-top: none;
+        }
+        .node_title {
+            text-align: center;
+        }
+        .node_children {
+            display: flex;
+            justify-content: center;
+            gap: 0px;
+        }
+    </style>
 </head>
 <body>
-
-    <div id="orgChartContainer">
-        <div id="orgChart"></div>
-    </div>
-
+    <div id="tree-view"></div>
     <input type="number" id="parent_id" placeholder="Enter Parent ID">
     <button onclick="addNode()">Add</button>
     <div id="error_message"></div>
-
-    <script src="libs/jquery-1.11.1.min.js"></script>
-    <script src="libs/jquery.orgchart.js"></script>
     <script>
         function fetchAndDisplayTree() {
             fetch('http://localhost:8000/api/nodes', {
@@ -34,15 +76,7 @@
             })
             .then(data => {
                 var nodes = data.nodes;
-                for (let i = 0; i < nodes.length; i++) {
-                    nodes[i] = {
-                        id: nodes[i].id,
-                        parent: nodes[i].parent_id || 0,
-                        name: nodes[i].id
-                    };
-                }
-                console.log(nodes);
-                $('#orgChart').orgChart({ data: nodes });
+                createTree(nodes);
             })
             .catch((error) => {
                 document.getElementById('error_message').innerText = 'Error fetching tree';
@@ -74,6 +108,37 @@
                 alert()
                 document.getElementById('error_message').innerText = 'Error adding node';
             });
+        }
+        function createTree(nodes) {
+            var tree = document.getElementById('tree-view');
+            tree.innerHTML = '';
+            nodes.forEach((node) => {
+                console.log(node);
+                if(node.parent_id) {
+                    var parent_node_el = document.getElementById("node_"+node.parent_id+ "");
+                    console.log(parent_node_el);
+                    var children_div = parent_node_el.querySelector(".node_children");
+                    console.log(children_div);
+                    if(!children_div) {
+                        children_div = document.createElement('div');
+                        children_div.className="node_children";
+                        console.log(children_div);
+                        parent_node_el.appendChild(children_div);
+                    }
+                    createNode(node, children_div);
+                } else {
+                    createNode(node, tree);
+                }
+            });
+        }
+        function createNode(node, parent) {
+            var node_el = document.createElement('div');
+            node_el.id = "node_"+node.id;
+            node_el.className = "node";
+            node_el.innerHTML = `
+                <div class="node_title">node_${node.id}</div>
+            `;
+            parent.appendChild(node_el);
         }
     </script>
 </body>
